@@ -3,464 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sleep • crypto aggregator</title>
-    <!-- sleepy style: dark, soft, glitchy but calm -->
+    <title>LocalPro · business directory</title>
+    <!-- Tailwind + inter font + forms plugin via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        /* base + leaflet fix + smooth category scroll */
+        body { font-family: 'Inter', sans-serif; background: #F0F4F8; }
+        .category-scroll { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+        .category-scroll::-webkit-scrollbar { height: 6px; background: #e2e8f0; border-radius: 10px; }
+        .category-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        .leaflet-container { border-radius: 0.75rem; z-index: 1; }
+        .hero-bg {
+            background-image: linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), 
+            url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=1920&auto=format&fit=crop'); /* city skyline blur via overlay + unsplash */
+            background-size: cover; background-position: center 30%;
         }
-
-        body {
-            background: #0b0f15;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
-
-        /* main card – sleep aggregator UI */
-        .aggregator {
-            max-width: 1100px;
-            width: 100%;
-            background: #141a24;
-            border-radius: 2.5rem;
-            padding: 2rem 2rem 2.2rem;
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(80, 140, 255, 0.1) inset;
-            backdrop-filter: blur(2px);
-            transition: all 0.2s ease;
-        }
-
-        /* header – tired but ticking */
-        .header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .logo h1 {
-            color: #e3e9f2;
-            font-weight: 400;
-            font-size: 1.8rem;
-            letter-spacing: -0.5px;
-        }
-
-        .logo span {
-            font-weight: 200;
-            color: #a0b3d9;
-            background: #1f2a36;
-            padding: 0.2rem 0.8rem;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            margin-left: 0.75rem;
-        }
-
-        .sleep-indicator {
-            background: #1e2632;
-            border-radius: 100px;
-            padding: 0.4rem 1.2rem;
-            color: #bdd3ff;
-            border: 1px solid #31415a;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .sleep-indicator::before {
-            content: "🌙";
-            font-size: 1.2rem;
-            filter: drop-shadow(0 0 4px #6688ee);
-        }
-
-        /* price tiles – aggregator vibe */
-        .ticker-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2.5rem;
-        }
-
-        .coin-card {
-            background: #1b232f;
-            padding: 1.2rem 0.8rem;
-            border-radius: 1.8rem;
-            border: 1px solid #283241;
-            box-shadow: 0 8px 0 #0f131b;
-            transition: 0.1s linear;
-            text-align: center;
-        }
-
-        .coin-name {
-            color: #9eb4d9;
-            font-weight: 300;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            letter-spacing: 1px;
-        }
-
-        .coin-price {
-            font-size: 1.8rem;
-            font-weight: 300;
-            color: #f0f4ff;
-            line-height: 1.2;
-            margin: 0.4rem 0 0.2rem;
-        }
-
-        .coin-change {
-            color: #73c7a3;
-            font-size: 0.9rem;
-            background: #1e3a2e;
-            display: inline-block;
-            padding: 0.2rem 0.8rem;
-            border-radius: 30px;
-        }
-
-        /* second row: small stats */
-        .global-stats {
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.8rem;
-            color: #9badc7;
-            font-weight: 200;
-            border-top: 1px dashed #2a3442;
-            padding-top: 1.5rem;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            background: #1e2632;
-            padding: 0.5rem 1.2rem;
-            border-radius: 40px;
-        }
-
-        /* fake table – lazy aggregator */
-        .market-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95rem;
-        }
-
-        .market-table th {
-            text-align: left;
-            color: #697a99;
-            font-weight: 300;
-            padding: 0.8rem 0.2rem;
-            border-bottom: 1px solid #283241;
-        }
-
-        .market-table td {
-            padding: 0.9rem 0.2rem;
-            color: #cbd5e6;
-            border-bottom: 1px dashed #212b36;
-        }
-
-        .market-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .green {
-            color: #83d9b2;
-        }
-
-        /* soft overlay + modal ––– country selector */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 15, 0.8);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            transition: opacity 0.2s;
-        }
-
-        /* hidden until page load — then shown by JS */
-        .modal-overlay.hidden {
-            display: none;
-        }
-
-        .country-modal {
-            background: #16202d;
-            width: 90%;
-            max-width: 440px;
-            border-radius: 2.8rem;
-            padding: 2rem 1.8rem 1.8rem;
-            box-shadow: 0 35px 70px -10px #000000cc, 0 0 0 1px #3d506e inset;
-            color: white;
-            border: 1px solid #3c5270;
-        }
-
-        .country-modal h2 {
-            font-weight: 300;
-            font-size: 2rem;
-            margin-bottom: 0.2rem;
-            letter-spacing: -0.5px;
-            color: #eaeef7;
-        }
-
-        .country-modal h2 small {
-            font-size: 0.9rem;
-            color: #859dbb;
-            font-weight: 200;
-            display: block;
-            margin-top: 0.2rem;
-        }
-
-        .country-list {
-            list-style: none;
-            margin: 2rem 0 1.8rem;
-            border-radius: 30px;
-            background: #101722;
-            padding: 0.6rem 0;
-            max-height: 340px;
-            overflow-y: auto;
-            border: 1px solid #293544;
-        }
-
-        .country-list li {
-            padding: 1rem 1.8rem;
-            margin: 0 0.2rem;
-            border-radius: 40px;
-            font-size: 1.2rem;
-            font-weight: 300;
-            color: #cbdaf0;
-            cursor: pointer;
-            transition: 0.1s;
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            border-bottom: 1px solid #1f2b37;
-        }
-
-        .country-list li:last-child {
-            border-bottom: none;
-        }
-
-        .country-list li:hover {
-            background: #23344b;
-            color: white;
-            padding-left: 2.2rem;
-        }
-
-        .country-list li.selected-country {
-            background: #1e3b4f;
-            color: white;
-            font-weight: 400;
-            border-left: 4px solid #8bbfff;
-        }
-
-        .flag-placeholder {
-            font-size: 1.4rem;
-            filter: drop-shadow(0 2px 2px black);
-        }
-
-        .note {
-            color: #7b93b5;
-            font-size: 0.9rem;
-            text-align: center;
-            border-top: 1px dashed #2a3a4e;
-            padding-top: 1.2rem;
-        }
-
-        .close-btn {
-            background: #2e3f57;
-            border: none;
-            color: white;
-            padding: 0.8rem 2rem;
-            border-radius: 100px;
-            font-size: 1rem;
-            width: 100%;
-            font-weight: 300;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            border: 1px solid #5e7da0;
-            transition: 0.2s;
-            margin-top: 0.5rem;
-        }
-
-        .close-btn:hover {
-            background: #3f5675;
-        }
-
-        /* sleepy scroll */
-        .country-list::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        .country-list::-webkit-scrollbar-track {
-            background: #0f1a24;
-        }
-
-        .country-list::-webkit-scrollbar-thumb {
-            background: #375272;
-            border-radius: 10px;
-        }
+        .transition { transition: all 0.15s ease; }
+        .rating-stars i { color: #fbbf24; margin-right: 2px; }
+        .badge-open { background: #10b981; color: white; }
+        .badge-claimed { background: #1E3A8A; color: white; }
+        /* subtle teal hover for cards */
+        .listing-card:hover { transform: scale(1.02); }
     </style>
 </head>
-<body>
-    <!-- main crypto aggregator UI – very sleep -->
-    <div class="aggregator">
-        <div class="header-row">
-            <div class="logo">
-                <h1>🛌 sleep<span>aggregator.xyz</span></h1>
-            </div>
-            <div class="sleep-indicator">
-                <span>last update: 3 min ago • low volume</span>
-            </div>
-        </div>
+<body class="antialiased text-gray-800">
 
-        <!-- sleepy moving prices -->
-        <div class="ticker-grid">
-            <div class="coin-card">
-                <div class="coin-name">BTC</div>
-                <div class="coin-price">••••</div>
-                <div class="coin-change">••••</div>
+    <!-- ========== STICKY NAVBAR ========== -->
+    <nav class="sticky top-0 bg-white/90 backdrop-blur-sm shadow-sm z-30 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+            <!-- left: logo -->
+            <a href="#" class="text-3xl font-bold text-[#00C4B4] tracking-tight">LocalPro</a>
+            <!-- desktop menu (hidden on xs) -->
+            <div class="hidden md:flex items-center space-x-6 text-gray-700 font-medium">
+                <a href="#" class="hover:text-[#00C4B4] transition">Home</a>
+                <a href="#" class="hover:text-[#00C4B4] transition">Listings</a>
+                <a href="#" class="hover:text-[#00C4B4] transition">Categories</a>
+                <a href="#" class="hover:text-[#00C4B4] transition">Blog</a>
+                <a href="#" class="hover:text-[#00C4B4] transition">Add Business</a>
             </div>
-            <div class="coin-card">
-                <div class="coin-name">ETH</div>
-                <div class="coin-price">••••</div>
-                <div class="coin-change">••••</div>
-            </div>
-            <div class="coin-card">
-                <div class="coin-name">SOL</div>
-                <div class="coin-price">••••</div>
-                <div class="coin-change">••••</div>
-            </div>
-            <div class="coin-card">
-                <div class="coin-name">DOT</div>
-                <div class="coin-price">••••</div>
-                <div class="coin-change">••••</div>
+            <!-- right: sign in + orange CTA -->
+            <div class="flex items-center gap-3">
+                <a href="#" class="text-sm font-medium text-gray-700 hover:text-[#1E3A8A] hidden sm:inline">Sign In</a>
+                <a href="#" class="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-sm transition flex items-center gap-1"><i class="fas fa-plus-circle"></i> <span class="hidden xs:inline">Add Your Business – Free</span><span class="inline xs:hidden">Free</span></a>
             </div>
         </div>
+    </nav>
 
-        <!-- global stats (for aggregator look) -->
-        <div class="global-stats">
-            <div class="stat-item"><span>🌐 total market cap</span> <strong>$2.41T</strong></div>
-            <div class="stat-item"><span>📊 volume (24h)</span> <strong>$68.2B</strong></div>
-            <div class="stat-item"><span>😴 funding rate</span> <strong>0.002%</strong></div>
-        </div>
+    <!-- ========== HERO with search + background ========== -->
+    <section class="hero-bg w-full py-12 md:py-16 px-4 border-b border-gray-200">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">Discover Local Businesses & Services</h1>
+            <p class="text-lg text-gray-600 mt-3 mb-8">Find trusted professionals, shops, restaurants near you</p>
 
-        <!-- mock table – lazy orderbook -->
-        <table class="market-table">
-            <thead>
-                <tr><th>exchange</th><th>pair</th><th>price</th><th>volume</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>Binance</td><td>BTC/USDT</td><td>$61,283</td><td class="green">•••• BTC</td></tr>
-                <tr><td>Kraken</td><td>ETH/USD</td><td>$2,913</td><td class="green">•••• ETH</td></tr>
-                <tr><td>Coinbase</td><td>SOL/USD</td><td>$142.4</td><td class="green">•••• SOL</td></tr>
-                <tr><td>Bitfinex</td><td>ADA/USD</td><td>$0.378</td><td class="green">•••• ADA</td></tr>
-            </tbody>
-        </table>
-
-        <!-- small sleepy footnote -->
-        <div style="margin-top: 1.5rem; color:#3c5070; font-size:0.8rem; text-align:right;">
-            * data slow • dream mode
-        </div>
-    </div>
-
-    <!-- MODAL overlay (hidden by default, shown after load) -->
-    <div id="modalOverlay" class="modal-overlay hidden">
-        <div class="country-modal">
-            <h2>🇿🇦 where from? <small>select your country</small></h2>
-
-            <!-- country list: south africa + 10 diverse (spanish, german, french) -->
-            <ul class="country-list" id="countryList">
-                <!-- South Africa first (ZA) -->
-                <li data-country="South Africa" class="selected-country">
-                    <span class="flag-placeholder">🇿🇦</span> South Africa
-                </li>
-                <!-- then 10 countries: spanish (spain, mexico, argentina), german (germany, austria, switzerland), french (france, belgium, canada, luxembourg) and one extra -->
-                <li data-country="Spain"><span class="flag-placeholder">🇪🇸</span> Spain (Spanish)</li>
-                <li data-country="Mexico"><span class="flag-placeholder">🇲🇽</span> Mexico (Spanish)</li>
-                <li data-country="Argentina"><span class="flag-placeholder">🇦🇷</span> Argentina (Spanish)</li>
-                <li data-country="Germany"><span class="flag-placeholder">🇩🇪</span> Germany (German)</li>
-                <li data-country="Austria"><span class="flag-placeholder">🇦🇹</span> Austria (German)</li>
-                <li data-country="Switzerland"><span class="flag-placeholder">🇨🇭</span> Switzerland (German/French)</li>
-                <li data-country="France"><span class="flag-placeholder">🇫🇷</span> France (French)</li>
-                <li data-country="Belgium"><span class="flag-placeholder">🇧🇪</span> Belgium (French/Dutch)</li>
-                <li data-country="Canada"><span class="flag-placeholder">🇨🇦</span> Canada (French/English)</li>
-                <li data-country="Luxembourg"><span class="flag-placeholder">🇱🇺</span> Luxembourg (French/German)</li>
-                <!-- total: 1 + 10 = 11. south africa + ten others. perfect. -->
-            </ul>
-
-            <div class="note">
-                🌍 we’ll remember your choice (kinda)
+            <!-- SEARCH BAR (flex column -> row) -->
+            <div class="bg-white p-3 md:p-4 rounded-2xl shadow-xl flex flex-col md:flex-row gap-3 items-stretch md:items-center border border-gray-200">
+                <!-- search input with icon -->
+                <div class="flex-1 flex items-center bg-gray-50 rounded-lg px-3 border border-gray-300 focus-within:ring-2 ring-teal-300">
+                    <i class="fas fa-search text-gray-400 mr-2"></i>
+                    <input type="text" placeholder="What are you looking for? (e.g. plumber, café...)" class="w-full py-3 bg-transparent outline-none text-sm" aria-label="Search query">
+                </div>
+                <!-- location with pin -->
+                <div class="flex-1 flex items-center bg-gray-50 rounded-lg px-3 border border-gray-300 focus-within:ring-2 ring-teal-300">
+                    <i class="fas fa-map-pin text-gray-400 mr-2"></i>
+                    <input type="text" placeholder="City or ZIP code" class="w-full py-3 bg-transparent outline-none text-sm" aria-label="Location">
+                </div>
+                <!-- dropdown category -->
+                <div class="flex items-center bg-gray-50 rounded-lg px-3 border border-gray-300 w-full md:w-auto">
+                    <i class="fas fa-tag text-gray-400 mr-2"></i>
+                    <select class="py-3 bg-transparent outline-none text-sm w-full md:w-40" aria-label="Category">
+                        <option>All Categories</option>
+                        <option>Restaurants</option>
+                        <option>Plumbers</option>
+                        <option>Cafés</option>
+                        <option>Electricians</option>
+                        <option>Gyms</option>
+                    </select>
+                </div>
+                <!-- teal search button -->
+                <button id="searchBtn" class="bg-[#00C4B4] hover:bg-[#00a094] text-white font-semibold py-3 px-8 rounded-lg shadow-md transition flex items-center justify-center gap-2 whitespace-nowrap">
+                    <i class="fas fa-search"></i> <span>Search</span>
+                </button>
             </div>
-            <button class="close-btn" id="closeModalBtn" onclick="window.location.href='index.html'">got it, continue</button>
+        </div>
+    </section>
+
+    <!-- ========== SCROLLABLE CATEGORIES (populated by js) ========== -->
+    <section class="max-w-7xl mx-auto px-4 py-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-th-large text-[#00C4B4]"></i> Popular categories</h2>
+        <div id="categoryRow" class="category-scroll flex overflow-x-auto gap-4 pb-2"></div>
+    </section>
+
+    <!-- ========== MAIN CONTENT: listings (left) + sidebar map (right) ========== -->
+    <div class="max-w-7xl mx-auto px-4 pb-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- LEFT: business listings grid (2-3 cols) -->
+        <div class="md:col-span-2">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800"><i class="fas fa-store-alt mr-2 text-[#1E3A8A]"></i>Local businesses</h2>
+                <span class="text-sm text-gray-500" id="resultCount">6 results</span>
+            </div>
+            <div id="listingsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5"></div>
+        </div>
+
+        <!-- RIGHT SIDEBAR: map + featured nearby -->
+        <div class="space-y-5">
+            <!-- interactive map leaflet -->
+            <div id="map" class="w-full h-56 md:h-64 rounded-xl shadow-md border border-gray-300 z-0"></div>
+            <!-- featured mini list -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-1"><i class="fas fa-clock text-[#00C4B4]"></i> Nearby & featured</h3>
+                <ul id="featuredList" class="space-y-3 text-sm"></ul>
+            </div>
         </div>
     </div>
 
-    <!-- tiny script: show modal immediately, handle selection -->
+    <!-- ========== FOOTER ========== -->
+    <footer class="bg-white border-t border-gray-200 py-6 mt-6">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center text-gray-500 text-sm">
+            <div class="flex gap-5 mb-3 sm:mb-0">
+                <a href="#" class="hover:text-[#00C4B4]">About</a>
+                <a href="#" class="hover:text-[#00C4B4]">Privacy</a>
+                <a href="#" class="hover:text-[#00C4B4]">Terms</a>
+            </div>
+            <div>© 2026 LocalPro Directory — find local excellence</div>
+        </div>
+    </footer>
+
+    <!-- scripts: leaflet, fontawesome already loaded -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         (function() {
-            // ----- show modal on page load -----
-            const modal = document.getElementById('modalOverlay');
-            const countryItems = document.querySelectorAll('#countryList li');
-            const closeBtn = document.getElementById('closeModalBtn');
+            // ---------- dummy DATA structures ----------
+            const categories = [
+                { name: 'Restaurants', icon: 'fa-utensils', count: 342, bg: 'bg-amber-100', color: 'text-amber-600' },
+                { name: 'Cafés', icon: 'fa-mug-hot', count: 189, bg: 'bg-emerald-100', color: 'text-emerald-700' },
+                { name: 'Plumbers', icon: 'fa-wrench', count: 74, bg: 'bg-blue-100', color: 'text-blue-700' },
+                { name: 'Electricians', icon: 'fa-bolt', count: 58, bg: 'bg-yellow-100', color: 'text-yellow-700' },
+                { name: 'Gyms', icon: 'fa-dumbbell', count: 113, bg: 'bg-rose-100', color: 'text-rose-700' },
+                { name: 'Shops', icon: 'fa-bag-shopping', count: 231, bg: 'bg-purple-100', color: 'text-purple-700' },
+                { name: 'Salons', icon: 'fa-scissors', count: 97, bg: 'bg-pink-100', color: 'text-pink-700' },
+                { name: 'Dentists', icon: 'fa-tooth', count: 44, bg: 'bg-indigo-100', color: 'text-indigo-700' }
+            ];
 
-            // Helper to hide modal
-            function hideModal() {
-                modal.classList.add('hidden');
+            const businesses = [
+                { id:1, name:'Café Central', rating:4.8, desc:'Artisan coffee & pastries', distance:1.2, open:true, price:'$$', claimed:true, image:'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=400&h=200&fit=crop', tags:['pet friendly'], lat:40.730, lng:-73.995 },
+                { id:2, name:'Pizza Express', rating:4.7, desc:'Authentic Neapolitan pizza', distance:0.8, open:true, price:'$$', claimed:true, image:'https://images.unsplash.com/photo-1579751626657-72bc170f98c7?w=400&h=200&fit=crop', tags:['takeaway'], lat:40.735, lng:-73.997 },
+                { id:3, name:'Elite Plumbers', rating:4.9, desc:'24/7 emergency service', distance:3.4, open:false, price:'$$$', claimed:false, image:'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400&h=200&fit=crop', tags:['licensed'], lat:40.741, lng:-74.005 },
+                { id:4, name:'Green Leaf Diner', rating:4.6, desc:'Healthy bowls & smoothies', distance:2.1, open:true, price:'$', claimed:true, image:'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=200&fit=crop', tags:['vegan'], lat:40.733, lng:-73.988 },
+                { id:5, name:'Main Street Gym', rating:4.8, desc:'Crossfit & yoga studio', distance:1.7, open:true, price:'$$', claimed:true, image:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=200&fit=crop', tags:['membership'], lat:40.738, lng:-73.992 },
+                { id:6, name:'Spark Electric', rating:4.7, desc:'Residential & commercial', distance:4.2, open:false, price:'$$', claimed:false, image:'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&h=200&fit=crop', tags:['24/7'], lat:40.745, lng:-74.010 }
+            ];
+
+            // featured nearby (subset)
+            const featured = businesses.slice(0,4).map(b => ({ name: b.name, distance: b.distance, claimed: b.claimed }));
+
+            // ---------- RENDER CATEGORIES ----------
+            const catContainer = document.getElementById('categoryRow');
+            catContainer.innerHTML = categories.map(cat => `
+                <div class="flex-shrink-0 w-28 sm:w-32 h-32 bg-white rounded-xl shadow-md hover:shadow-lg transition border border-gray-100 flex flex-col items-center justify-center p-2 cursor-pointer hover:scale-105">
+                    <div class="w-12 h-12 rounded-full ${cat.bg} flex items-center justify-center text-2xl ${cat.color}"><i class="fas ${cat.icon}"></i></div>
+                    <span class="font-semibold text-sm mt-2">${cat.name}</span>
+                    <span class="text-xs text-gray-500">(${cat.count})</span>
+                </div>
+            `).join('');
+
+            // ---------- RENDER BUSINESS LISTINGS (card grid) ----------
+            const listingsDiv = document.getElementById('listingsGrid');
+            function renderListings(filterTerm = '') {
+                const filtered = filterTerm ? businesses.filter(b => b.name.toLowerCase().includes(filterTerm) || b.desc.toLowerCase().includes(filterTerm)) : businesses;
+                document.getElementById('resultCount').innerText = filtered.length + ' results';
+
+                listingsDiv.innerHTML = filtered.map(b => {
+                    const stars = Array(5).fill(0).map((_,i) => `<i class="fas fa-star ${i < Math.floor(b.rating) ? '' : 'text-gray-300'}"></i>`).join('');
+                    return `
+                    <div class="listing-card bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-all">
+                        <img src="${b.image}" alt="${b.name}" class="w-full h-32 object-cover">
+                        <div class="p-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-bold text-gray-800">${b.name}</h3>
+                                <span class="text-sm text-gray-600"><i class="fas fa-map-marker-alt text-teal-500 mr-1"></i>${b.distance} km</span>
+                            </div>
+                            <div class="flex items-center text-sm my-1 rating-stars">
+                                ${stars} <span class="ml-1 text-gray-600">${b.rating}</span>
+                            </div>
+                            <p class="text-sm text-gray-600 line-clamp-1">${b.desc}</p>
+                            <div class="flex flex-wrap gap-1 my-2">
+                                ${b.open ? '<span class="badge-open text-xs px-2 py-0.5 rounded-full">Open now</span>' : '<span class="bg-gray-300 text-gray-700 text-xs px-2 py-0.5 rounded-full">Closed</span>'}
+                                <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full">${b.price}</span>
+                                ${b.claimed ? '<span class="badge-claimed text-xs px-2 py-0.5 rounded-full"><i class="fas fa-check-circle mr-1"></i>Claimed</span>' : ''}
+                                ${b.tags.map(t => `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">${t}</span>`).join('')}
+                            </div>
+                            <div class="flex gap-2 pt-2 border-t border-gray-100 mt-2">
+                                <button class="flex-1 bg-gray-100 hover:bg-gray-200 rounded-lg py-1 text-xs font-medium transition call-btn" data-name="${b.name}"><i class="fas fa-phone-alt mr-1"></i>Call</button>
+                                <button class="flex-1 bg-gray-100 hover:bg-gray-200 rounded-lg py-1 text-xs font-medium transition website-btn"><i class="fas fa-globe mr-1"></i>Website</button>
+                                <button class="flex-1 bg-gray-100 hover:bg-gray-200 rounded-lg py-1 text-xs font-medium transition direction-btn" data-lat="${b.lat}" data-lng="${b.lng}"><i class="fas fa-location-arrow mr-1"></i>Directions</button>
+                            </div>
+                        </div>
+                    </div>
+                `}).join('');
             }
+            renderListings();
 
-            // When any country clicked: mark as selected, then close modal (optional)
-            function onCountryClick(e) {
-                const li = e.currentTarget;
-                // remove previous selected class from all
-                countryItems.forEach(item => item.classList.remove('selected-country'));
-                li.classList.add('selected-country');
+            // ---------- SIDEBAR FEATURED LIST ----------
+            const featuredUl = document.getElementById('featuredList');
+            featuredUl.innerHTML = featured.map(f => `
+                <li class="flex justify-between items-center border-b border-gray-100 pb-2">
+                    <span><i class="fas fa-store text-[#00C4B4] mr-2"></i>${f.name} ${f.claimed ? '<i class="fas fa-check-circle text-blue-600 text-xs"></i>' : ''}</span>
+                    <span class="text-xs bg-gray-100 px-2 py-0.5 rounded-full">${f.distance} km</span>
+                </li>
+            `).join('');
 
-                // you could store the selection here, but we just hide modal after short nap
-                // slight delay feels sleepy
-                setTimeout(() => {
-                    hideModal();
-                }, 120);
-            }
+            // ---------- LEAFLET MAP with pins (simple cluster style) ----------
+            const map = L.map('map').setView([40.73, -74.00], 13);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap, CartoDB'
+            }).addTo(map);
 
-            // Attach click to every country line
-            countryItems.forEach(item => {
-                item.addEventListener('click', onCountryClick);
+            // add markers from businesses (simple, one layer)
+            const markers = [];
+            businesses.forEach(b => {
+                const marker = L.marker([b.lat, b.lng]).addTo(map)
+                    .bindPopup(`<b>${b.name}</b><br>${b.desc}<br>⭐ ${b.rating}`);
+                markers.push(marker);
             });
 
-            // Close modal with button – also closes without changing (but keeps default ZA)
-            closeBtn.addEventListener('click', function(e) {
+            // optional fitBounds to include all
+            const group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.2));
+
+            // ---------- SEARCH MOCK + DYNAMIC FILTER (search btn + console) ----------
+            document.getElementById('searchBtn').addEventListener('click', (e) => {
                 e.preventDefault();
-                hideModal();
+                const searchInput = document.querySelector('input[placeholder*="What are you looking"]').value.trim().toLowerCase();
+                console.log('Search submitted:', {
+                    query: searchInput,
+                    location: document.querySelector('input[placeholder*="ZIP code"]').value,
+                    category: document.querySelector('select').value
+                });
+                renderListings(searchInput); // simulate filtering (case-insensitive)
             });
 
-            // optional: click outside modal? not implemented (focus on list)
-
-            // wait for everything to load, then remove hidden class – show modal
-            window.addEventListener('load', function() {
-                // tiny delay to make it feel like a popup after render (still immediate)
-                setTimeout(() => {
-                    modal.classList.remove('hidden');
-                }, 30);
-            });
-
-            // extra: make sure if someone clicks on the backdrop (modal-overlay) we close?
-            // but avoid closing when clicking inside modal
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {   // click on overlay background
-                    hideModal();
+            // ---------- EVENT DELEGATION FOR CARD BUTTONS (call, website, direction) ----------
+            document.addEventListener('click', (e) => {
+                const callBtn = e.target.closest('.call-btn');
+                if (callBtn) {
+                    const name = callBtn.dataset.name;
+                    alert(`📞 Calling ${name} (demo)`);
+                }
+                const websiteBtn = e.target.closest('.website-btn');
+                if (websiteBtn) {
+                    alert('🔗 Opening website (mock)');
+                }
+                const dirBtn = e.target.closest('.direction-btn');
+                if (dirBtn) {
+                    const lat = dirBtn.dataset.lat;
+                    const lng = dirBtn.dataset.lng;
+                    alert(`🗺️ Directions to (${lat}, ${lng}) – demo`);
                 }
             });
+
+            // smooth scrolling for category clicks (just dummy)
+            document.querySelectorAll('#categoryRow > div').forEach((card, idx) => {
+                card.addEventListener('click', () => {
+                    console.log('Category clicked:', categories[idx].name);
+                });
+            });
+
+            // ---------- ACCESSIBILITY (some dynamic ARIA) ----------
+            // add aria labels to interactive elements already handled above
         })();
     </script>
-
-    <!-- subtle: pre-selected South Africa, and includes german/spanish/french mix -->
-    <!-- The list order: 1. South Africa, then Spain, Mexico, Argentina (spanish), Germany, Austria, Switzerland (german), France, Belgium, Canada, Luxembourg (french +) exactly 10 after ZA -->
+    <!-- extra tweaks: fallback if unsplash doesn't load, etc. -->
+    <noscript>Please enable JavaScript for full experience.</noscript>
 </body>
 </html>
